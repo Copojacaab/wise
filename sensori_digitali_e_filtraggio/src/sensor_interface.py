@@ -27,7 +27,7 @@ def simulate_accell_raw_read(t):
     vibration_part = vibration_amplitude * np.sin(2 * np.pi * vibration_frequency)
 
     # 3. rumore causuale (jitter)
-    noise = random.normal(0, 50)
+    noise = np.random.normal(0, 50)
 
     raw_value = int(gravity_part + vibration_part + noise) #dato grezzo, composto dalla forza grav costante, il segnale di interesse e il rumore
 
