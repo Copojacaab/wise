@@ -32,7 +32,7 @@ def analyze_fft(detrendend_signal, fs, N):
     # -- 1. Windowing
     # la finestra (Hanning in questo caso) riduce i leakage 
     # causati dal troncamento del segnale a una durata fissa (N=50)
-    window = scipy.signal.windows.hanning(N)
+    window = scipy.signal.windows.hann(N)
     # moltiplichiamo il segnale per la funzione finestra, gli estremi dell'arr
     # vengono pesati verso 0
     windowed_signal = detendrend_signal * window
@@ -82,7 +82,7 @@ try:
 
             # genera il pacchetto di dati simulato
             simulated_packet = simulate_sensor_packet(elapsed_time)
-            data_buffer.append(simulate_sensor_packet)
+            data_buffer.append(simulated_packet)
             packet_counter += 1
         
         # 2. ANALISI FFT (Task a bassa frequenza)
@@ -92,7 +92,7 @@ try:
             # esegue l'analisi solamente se il buffer e' pieno
             if(len(data_buffer) == BUFFER_SIZE):
                 #  A. estrazione e detrending
-                raw_values = np.array(p['value'] for p in data_buffer)
+                raw_values = np.array([p['value'] for p in data_buffer])
                 detendrend_signal = raw_values - ADC_OFFSET
 
                 # B. esecuzione analisi FFT
@@ -110,6 +110,27 @@ try:
                 print(f"[{elapsed_time: .3f} s] Risultato analisi FFT")
                 print(f"Frequenza dominante rilevata: {dominant_freq: .3f}")
 
+                # ======== VISUALIZZAZIONE ============
+
+                plt.figure(figsize=(10,5))
+                # traccia lo spettro di potenza
+                plt.plot(frequencies, power_spectrum, marker='o', linestyle='-', color='b', label='Spettro di Potenza')
+                # titolo ed etichette
+                plt.title(f"Spettro di potenza - Osservazione Antialiasing (Fs = {RECEIVE_FREQUENCY} Hz, N = {BUFFER_SIZE})")
+                plt.xlabel("Frequenza (Hz)")
+                plt.ylabel("Ampiezza Normalizzata")
+
+                # evidenzia il picco
+                plt.scatter(dominant_freq, power_spectrum[max_index], color='red', marker='X', s=200,
+                            label=f'Picco Aliased: {dominant_freq: .3f} Hz')
+                # limita l'asse x alla frequenza di Nyquist (oltre non abbiamo dati reali)
+                plt.xlim(0, RECEIVE_FREQUENCY/2)
+                plt.grid(True)
+                plt.legend()
+
+                plt.show() 
+
+                print("================================================")
             else: # se il buffer non e' ancora pieno
                 print(f"[{elapsed_time: .3f} s] Buffer non ancora pieno. Dati presenti: {len(data_buffer)}")
 
