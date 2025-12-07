@@ -15,9 +15,50 @@ from acquisizione_dati_e_buffer_micro.project1_wireless import (
 # costante per il detranding (tolgo la componente DC)
 ADC_OFFSET = 2048 # valore centrale ADC a 12 bit
 
-# ======== FUNZIONE DI ANALISI FFT ===================
+# ======== FUNZIONE DI ANALISI FFT =================== (dall'array allo spettro)
 def analyze_fft(detrendend_signal, fs, N):
-    pass
+    """
+    Esegue l'analisi FFT sul segnale  calcola lo spettro di potenza
+
+    Args:
+        detrended_signal (np.array): segnale ADC grezzo (senza l'offset DC)
+        fs (float): frequenza di campionamento effettiva
+        N (int): numero di campioni nel segnale
+    
+    Returns: 
+        tuple(frequenze, spettro_di_potenza_normalizzato)
+    """
+
+    # -- 1. Windowing
+    # la finestra (Hanning in questo caso) riduce i leakage 
+    # causati dal troncamento del segnale a una durata fissa (N=50)
+    window = scipy.signal.windows.hanning(N)
+    # moltiplichiamo il segnale per la funzione finestra, gli estremi dell'arr
+    # vengono pesati verso 0
+    windowed_signal = detendrend_signal * window
+
+    # 2. Calcolo della trasformata di Fourier (FFT)
+    # applico la FFT al segnale finestrato. l'output e' un arr di N numeri complessi
+    fft_output = np.fft.fft(windowed_signal)
+
+    # 3. Mapping delle frequenze
+    # calcola  a quale frequenza corrisponde ogni indice dell'arr fft_output
+    # d e' il periodo di campionamento
+    frequencies = np.fft.fftfreq(N, d=1.0/fs)
+
+    # 4. calcolo dello spettro di potenza e normalizzazione
+    # np.abs() => calcoliamo l'ampiezza del numero complesso
+    # 2/n => moltiplichiamo per 2/N in modo da normalizzare l'ampiezza in modo che
+    # l'altezza del picco corrisponda con l'altezza effettiva della sinusoide
+    power_spectrum = np.abs(fft_output) * 2/N
+
+    # 5. Filtro per la meta' positiva (freq di Nyquist)
+    N_half = N // 2
+
+    # ritorna solamente le frequenze positive, dalla prima frequenza > 0Hz (indice 1)
+    # fino alla frequenza di Nyquist (Fs/2)
+    # l'indice 0 (DC component) e la parte negativa dello spettro vengono omessi
+    return frequencies[1:N_half], power_spectrum[1:N_half]
 
 # ======= MAIN LOOP(simulazione del micro gateway) =============
 
@@ -69,7 +110,7 @@ try:
                 print(f"[{elapsed_time: .3f} s] Risultato analisi FFT")
                 print(f"Frequenza dominante rilevata: {dominant_freq: .3f}")
 
-            else # se il buffer non e' ancora pieno
+            else: # se il buffer non e' ancora pieno
                 print(f"[{elapsed_time: .3f} s] Buffer non ancora pieno. Dati presenti: {len(data_buffer)}")
 
 except KeyboardInterrupt:
