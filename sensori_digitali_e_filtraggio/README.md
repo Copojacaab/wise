@@ -77,4 +77,4 @@ che deve essere prima normalizzato per rappresentare un unita fisica come *g* o 
     lascia passare le basse frequenze. Maggiore e' N e piu' liscio sara il segnale, ma cresce anche 
     il costo computazionale.
 
-    
+
